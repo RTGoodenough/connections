@@ -28,11 +28,3 @@ target_include_directories(
   PRIVATE
   ${DEPS_DIR}
 )
-
-find_package(Eigen3 REQUIRED NO_MODULE)
-
-target_link_libraries(
-  ${PROJECT_NAME}
-  PUBLIC
-  Eigen3::Eigen
-)

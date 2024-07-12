@@ -3,7 +3,7 @@ BasedOnStyle: Google
 Standard: c++20
 TabWidth: 2
 UseTab: Never
-ColumnLimit: 110
+ColumnLimit: 120
 PointerAlignment: Left
 ReflowComments:  false
 IncludeBlocks: Preserve
@@ -13,3 +13,4 @@ SpaceAfterLogicalNot: true
 SpaceBeforeAssignmentOperators: true
 SpaceBeforeParens: ControlStatements
 SpacesInConditionalStatement: true
+BreakBeforeBraces: Stroustrup
