@@ -1,32 +1,36 @@
 #pragma once
 
-#include "network/network.hpp"
+#include <type_traits>
 
-#include "training/training_data.hpp"
-#include "util/output.hpp"
+#include "connections/network/arena.hpp"
+#include "connections/network/network.hpp"
+
+#include "connections/training/training_data.hpp"
+#include "connections/util/output.hpp"
 
 namespace cntns {
 
 template <size_t in_size, size_t out_size, typename... layer_ts>
-void gpu_train_network(NeuralNetwork<ArenaType::GPU, in_size, out_size, layer_ts...>& /*network*/,
-                       TrainingConfig /*config*/, TrainingData<in_size, out_size>& /*data*/);
+void gpu_train_network(auto&& /*network*/, TrainingConfig /*config*/,
+                       TrainingData<in_size, out_size, ArenaType::GPU>& /*data*/);
 template <size_t in_size, size_t out_size, typename... layer_ts>
-void cpu_train_network(NeuralNetwork<ArenaType::CPU, in_size, out_size, layer_ts...>& /*network*/,
-                       TrainingConfig /*config*/, TrainingData<in_size, out_size>& /*data*/);
+void cpu_train_network(auto&& /*network*/, TrainingConfig /*config*/,
+                       TrainingData<in_size, out_size, ArenaType::CPU>& /*data*/);
 
 /**
  * @brief Calls the correct training function based on the arena selected
  * 
  */
-template <ArenaType arena_t, typename network_t>
-inline void train_network(network_t& network, TrainingConfig config,
-                          TrainingData<network_t::IN_SIZE, network_t::OUT_SIZE>& data)
+template <ArenaType arena_e, typename network_t>
+inline void train_network(
+    network_t&& network, TrainingConfig config,
+    TrainingData<std::remove_cvref_t<network_t>::IN_SIZE, std::remove_cvref_t<network_t>::OUT_SIZE, arena_e>& data)
 {
-  if constexpr ( arena_t == ArenaType::CPU ) {
-    cpu_train_network(network, config, data);
+  if constexpr ( arena_e == ArenaType::CPU ) {
+    cpu_train_network(std::forward<network_t>(network), config, data);
   }
   else {
-    gpu_train_network(network, config, data);
+    gpu_train_network(std::forward<network_t>(network), config, data);
   }
 }
 
@@ -35,8 +39,7 @@ inline void train_network(network_t& network, TrainingConfig config,
  * 
  */
 template <size_t in_size, size_t out_size, typename... layer_ts>
-void gpu_train_network(NeuralNetwork<ArenaType::GPU, in_size, out_size, layer_ts...>& network, TrainingConfig config,
-                       TrainingData<in_size, out_size>& data)
+void gpu_train_network(auto&& network, TrainingConfig config, TrainingData<in_size, out_size, ArenaType::GPU>& data)
 {
   // #ifndef NO_CUDA
   //   // Load data onto the GPU
@@ -72,27 +75,26 @@ void gpu_train_network(NeuralNetwork<ArenaType::GPU, in_size, out_size, layer_ts
  * 
  */
 template <size_t in_size, size_t out_size, typename... layer_ts>
-void cpu_train_network(NeuralNetwork<ArenaType::CPU, in_size, out_size, layer_ts...>& network, TrainingConfig config,
-                       TrainingData<in_size, out_size>& data)
+void cpu_train_network(auto&& network, TrainingConfig config, TrainingData<in_size, out_size, ArenaType::CPU>& data)
 {
   // Run the training loop for the specified number of epochs
   for ( size_t epoch = 0; epoch < config.epochs; ++epoch ) {
-    float loss = 0.0F;
+    double loss = 0.0F;
 
     // Break the data into batches and train the network
     for ( size_t i = 0; i < data.input.size(); i += config.batchSize ) {
       // Evaluate the network for each input in the batch, calculate the loss and back propagate the error
       for ( size_t j = 0; j < config.batchSize; ++j ) {
         auto const& result = network.evaluate(data.input[i + j]);
-        // loss += network.loss(data.correct[i + j], result);
-        // network.back_propagate(data.input[i + j], network.error(data.correct[i + j], result));
+        loss += network.loss(data.correct[i + j], result);
+        network.back_propagate(data.input[i + j], network.error(data.correct[i + j], result));
       }
 
       // Update the weights of the network with the average loss
       network.update_weights(config.learningRate, config.batchSize);
 
       output::message("CPU Training\nEpoch: %zu/%zu\nImage: %zu/%zu\nLoss: %f\n", epoch, config.epochs, i,
-                      data.input.size(), loss / static_cast<float>(i + 1));
+                      data.input.size(), loss / static_cast<double>(i + 1));
     }
   }
 }

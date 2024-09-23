@@ -1,30 +1,14 @@
 cmake_minimum_required(VERSION 3.14)
 
-set(PROJECT_NAME connections)
-set(SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
+set(CNTNS_NAME connections)
 set(INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include)
-set(DEPS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/deps)
 
-project(${PROJECT_NAME})
+project(${CNTNS_NAME})
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-add_library(
-  ${PROJECT_NAME} 
-  STATIC
-  ${SRC_DIR}/connections.cpp
-)
 
-target_include_directories(
-  ${PROJECT_NAME}
-  PUBLIC
-  ${INCLUDE_DIR}
-)
-
-target_include_directories(
-  ${PROJECT_NAME}
-  PRIVATE
-  ${DEPS_DIR}
-)
+add_library(${CNTNS_NAME} INTERFACE)
+target_include_directories(${CNTNS_NAME} INTERFACE INCLUDE_DIR)

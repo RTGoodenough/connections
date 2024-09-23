@@ -2,7 +2,9 @@
 
 #include <cstddef>
 #include <vector>
-#include "linear_algebra/vector.hpp"
+
+#include "connections/linear_algebra/vector.hpp"
+#include "connections/network/arena.hpp"
 
 namespace cntns {
 
@@ -16,12 +18,13 @@ struct TrainingConfig {
  * @brief A struct to hold the training/testing data for the neural network
  * 
  */
-template <size_t in_size, size_t out_size>
+template <size_t in_size, size_t out_size, ArenaType arena_e>
 struct TrainingData {
-  std::vector<Vec<double, in_size>>  input;
-  std::vector<Vec<double, out_size>> correct;
+  std::vector<Vec<double, in_size, arena_e>>  input;
+  std::vector<Vec<double, out_size, arena_e>> correct;
 
-  TrainingData(std::vector<Vec<double, in_size>>&& input, std::vector<Vec<double, out_size>>&& correct)
+  TrainingData(std::vector<Vec<double, in_size, arena_e>>&&  input,
+               std::vector<Vec<double, out_size, arena_e>>&& correct)
       : input{std::move(input)}, correct{std::move(correct)}
   {
   }

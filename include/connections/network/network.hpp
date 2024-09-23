@@ -6,10 +6,10 @@
 
 #include "arena.hpp"
 
-#include "util/tuple.hpp"
+#include "connections/util/tuple.hpp"
 
 namespace cntns {
-template <ArenaType arena_e, size_t in_size, size_t out_size, typename... layer_ts>
+template <ArenaType arena_e, size_t in_size, size_t out_size, typename cost_t, typename... layer_ts>
 class NeuralNetwork {
  public:
   static constexpr ArenaType ARENA = arena_e;
@@ -35,11 +35,23 @@ class NeuralNetwork {
    * @brief Updates the weights of the neural network
    * 
    */
-  void update_weights(float learningRate, size_t batchSize)
+  void update_weights(double learningRate, size_t batchSize)
   {
     std::apply([learningRate, batchSize](auto&&... layer) { (layer.update_weights(learningRate, batchSize), ...); },
                _layers);
   }
+
+  /**
+   * @brief Calculates the loss between the correct output and the result of the neural network
+   * 
+   */
+  [[nodiscard]] constexpr auto loss(auto const& correct, auto const& result) { return cost_t::loss(correct, result); }
+
+  /**
+   * @brief Calculates the error between the correct output and the result of the neural network
+   * 
+   */
+  [[nodiscard]] constexpr auto error(auto const& correct, auto const& result) { return cost_t::error(correct, result); }
 
  private:
   std::tuple<layer_ts...> _layers;
@@ -53,7 +65,7 @@ class NeuralNetwork {
   {
     // Recursively evaluate each layer, passing the result of the previous layer as input to the next
     if constexpr ( util::tuple_size<tail_t>::value > 1 ) {
-      return chain_layers(std::get<0>(tail).evaluate(prevResult), tuple_tail(tail));
+      return chain_layers(std::get<0>(tail).evaluate(prevResult), util::tuple_tail(tail));
     }
     else {
       // Have reached the last layer return the total result, static check that it matches the output
@@ -79,7 +91,7 @@ class NeuralNetwork {
       // Bottom up, recursively drill down then back_propagate back up
       return std::get<0>(tail).back_propagate(
           input, back_propagate_layers(std::get<0>(tail).get_activations(), std::forward<error_t>(finalError),
-                                       tuple_tail(tail)));
+                                       util::tuple_tail(tail)));
     }
   }
 

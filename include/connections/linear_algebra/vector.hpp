@@ -8,35 +8,55 @@
 #include <initializer_list>
 #include <type_traits>
 
-#include "util/concepts/conversions.hpp"
-#include "util/concepts/types.hpp"
-#include "util/concepts/vector.hpp"
+#include "connections/network/arena.hpp"
+#include "connections/util/concepts/conversions.hpp"
+#include "connections/util/concepts/types.hpp"
+#include "connections/util/concepts/vector.hpp"
 
-#include "util/operator_crtp.hpp"
+#include "connections/util/operator_crtp.hpp"
+#include "connections/util/perf.hpp"
 
 namespace cntns {
 
-template <util::Numeric data_t, std::size_t dim_s>
-class Vec : public util::Operators<Vec<data_t, dim_s>> {
+#define CNTNS_VEC_FUNC [[nodiscard]] CNTNS_INLINE CNTNS_PERF_FUNC constexpr
+
+template <typename value_t, size_t rows, size_t cols, ArenaType arena_e>
+class Matrix;
+
+template <util::Numeric data_t, std::size_t dim_s, ArenaType arena_e>
+class Vec : public util::Operators<Vec<data_t, dim_s, arena_e>> {
  public:
   using value_t = data_t;
   using array_t = std::array<value_t, dim_s>;
   static constexpr size_t DIM = dim_s;
 
-  [[nodiscard]] constexpr auto mag() const noexcept -> double;
-  [[nodiscard]] constexpr auto mag_2() const noexcept -> double;
+  constexpr void zero() { std::fill(_values.begin(), _values.end(), 0.0F); }
+
+  CNTNS_VEC_FUNC auto mag() const noexcept -> double;
+  CNTNS_VEC_FUNC auto mag_2() const noexcept -> double;
 
   template <typename other_t>
-  [[nodiscard]] constexpr auto dot(other_t&& other) const noexcept -> double requires util::is_same_dim<Vec, other_t>;
+  CNTNS_VEC_FUNC auto dot(other_t&& other) const noexcept -> double requires util::is_same_dim<Vec, other_t>;
 
   template <typename other_t>
-  [[nodiscard]] constexpr auto cross(other_t&& other) const noexcept
+  CNTNS_VEC_FUNC auto cross(other_t&& other) const noexcept
       -> Vec requires util::is_3d<Vec> && util::is_same_dim<Vec, other_t>;
 
   template <typename other_t>
-  [[nodiscard]] constexpr auto hadamard(other_t&& other) const noexcept -> Vec requires util::is_same_dim<Vec, other_t>;
+  CNTNS_VEC_FUNC auto hadamard(other_t&& other) const noexcept -> Vec requires util::is_same_dim<Vec, other_t>;
 
-  [[nodiscard]] constexpr auto at(size_t idx) const noexcept -> value_t const& { return _values[idx]; }
+  /**
+   * @brief Computes the outer product of two vectors
+   * 
+   * @tparam other_dim 
+   * @param other 
+   * @return Matrix<other_dim, dim> 
+   */
+  template <size_t other_dim>
+  CNTNS_VEC_FUNC auto outer_product(Vec<value_t, other_dim, arena_e> const& other) const
+      -> Matrix<value_t, other_dim, dim_s, arena_e>;
+
+  CNTNS_VEC_FUNC auto at(size_t idx) const noexcept -> value_t const& { return _values[idx]; }
 
  private:
   array_t _values;
@@ -97,23 +117,27 @@ class Vec : public util::Operators<Vec<data_t, dim_s>> {
   constexpr auto operator=(Vec const&) noexcept -> Vec& = default;
   constexpr auto operator=(Vec&&) noexcept -> Vec& = default;
 
-  [[nodiscard]] constexpr auto operator<=>(Vec const&) const noexcept = default;
+  CNTNS_VEC_FUNC auto operator<=>(Vec const&) const noexcept = default;
 
-  [[nodiscard]] constexpr auto operator[](size_t idx) noexcept -> value_t&
+  CNTNS_VEC_FUNC auto operator[](size_t idx) const noexcept -> value_t const&
   {
     assert(idx < dim_s);
-
+    return _values[idx];
+  }
+  CNTNS_VEC_FUNC auto operator[](size_t idx) noexcept -> value_t&
+  {
+    assert(idx < dim_s);
     return _values[idx];
   }
 
-  [[nodiscard]] constexpr auto operator+(Vec const& other) const noexcept -> Vec
+  CNTNS_VEC_FUNC auto operator+(Vec const& other) const noexcept -> Vec
   {
     array_t temp{_values};
     for ( size_t i = 0; i < dim_s; ++i ) temp[i] += other.at(i);
     return Vec{temp};
   }
 
-  [[nodiscard]] constexpr auto operator-(Vec const& other) const noexcept -> Vec
+  CNTNS_VEC_FUNC auto operator-(Vec const& other) const noexcept -> Vec
   {
     array_t temp{_values};
     for ( size_t i = 0; i < dim_s; ++i ) temp[i] -= other.at(i);
@@ -121,7 +145,7 @@ class Vec : public util::Operators<Vec<data_t, dim_s>> {
   }
 
   template <util::Numeric scalar_t>
-  [[nodiscard]] constexpr auto operator*(scalar_t&& scalar) const noexcept -> Vec
+  CNTNS_VEC_FUNC auto operator*(scalar_t&& scalar) const noexcept -> Vec
   {
     Vec temp{_values};
     for ( size_t i = 0; i < dim_s; ++i ) temp[i] *= std::forward<scalar_t>(scalar);
@@ -129,7 +153,7 @@ class Vec : public util::Operators<Vec<data_t, dim_s>> {
   }
 
   template <util::Numeric scalar_t>
-  [[nodiscard]] constexpr auto operator/(scalar_t&& scalar) const noexcept -> Vec
+  CNTNS_VEC_FUNC auto operator/(scalar_t&& scalar) const noexcept -> Vec
   {
     Vec temp{_values};
     for ( size_t i = 0; i < dim_s; ++i ) temp[i] *= std::forward<scalar_t>(scalar);
@@ -144,11 +168,15 @@ class Vec : public util::Operators<Vec<data_t, dim_s>> {
   }
 };
 
-using Vec2_d = Vec<double, 2>;
-using Vec2_f = Vec<float, 2>;
+using Vec2_dc = Vec<double, 2, ArenaType::CPU>;
+using Vec2_fc = Vec<float, 2, ArenaType::CPU>;
+using Vec3_dc = Vec<double, 3, ArenaType::CPU>;
+using Vec3_fc = Vec<float, 3, ArenaType::CPU>;
 
-using Vec3_d = Vec<double, 3>;
-using Vec3_f = Vec<float, 3>;
+using Vec2_dg = Vec<double, 2, ArenaType::GPU>;
+using Vec2_fg = Vec<float, 2, ArenaType::GPU>;
+using Vec3_dg = Vec<double, 3, ArenaType::GPU>;
+using Vec3_fg = Vec<float, 3, ArenaType::GPU>;
 
 // ==========================================================================================
 // ================================== IMPLEMENTATION ========================================
@@ -160,8 +188,8 @@ constexpr auto operator*(value_t&& other, vec_t&& vec) -> decltype(auto)
   return std::forward<vec_t>(vec) * std::forward<value_t>(other);
 }
 
-template <util::Numeric value_t, size_t dim_s>
-constexpr auto Vec<value_t, dim_s>::mag() const noexcept -> double
+template <util::Numeric value_t, size_t dim_s, ArenaType arena_e>
+constexpr auto Vec<value_t, dim_s, arena_e>::mag() const noexcept -> double
 {
   double sum = 0.0;
   for ( size_t i = 0; i < dim_s; ++i ) {
@@ -170,8 +198,8 @@ constexpr auto Vec<value_t, dim_s>::mag() const noexcept -> double
   return std::sqrt(sum);
 }
 
-template <util::Numeric value_t, size_t dim_s>
-constexpr auto Vec<value_t, dim_s>::mag_2() const noexcept -> double
+template <util::Numeric value_t, size_t dim_s, ArenaType arena_e>
+constexpr auto Vec<value_t, dim_s, arena_e>::mag_2() const noexcept -> double
 {
   double sum = 0.0;
   for ( size_t i = 0; i < dim_s; ++i ) {
@@ -180,9 +208,9 @@ constexpr auto Vec<value_t, dim_s>::mag_2() const noexcept -> double
   return sum;
 }
 
-template <util::Numeric value_t, size_t dim_s>
+template <util::Numeric value_t, size_t dim_s, ArenaType arena_e>
 template <typename other_t>
-constexpr auto Vec<value_t, dim_s>::dot(other_t&& other) const noexcept
+constexpr auto Vec<value_t, dim_s, arena_e>::dot(other_t&& other) const noexcept
     -> double requires util::is_same_dim<Vec, other_t>
 {
   double sum = 0.0;
@@ -192,9 +220,9 @@ constexpr auto Vec<value_t, dim_s>::dot(other_t&& other) const noexcept
   return sum;
 }
 
-template <util::Numeric value_t, size_t dim_s>
+template <util::Numeric value_t, size_t dim_s, ArenaType arena_e>
 template <typename other_t>
-constexpr auto Vec<value_t, dim_s>::cross(other_t&& other) const noexcept
+constexpr auto Vec<value_t, dim_s, arena_e>::cross(other_t&& other) const noexcept
     -> Vec requires util::is_3d<Vec> && util::is_same_dim<Vec, other_t>
 {
   auto const& vec = *this;
@@ -203,15 +231,36 @@ constexpr auto Vec<value_t, dim_s>::cross(other_t&& other) const noexcept
              (vec[0] * static_cast<value_t>(other[1]) - vec[1] * static_cast<value_t>(other[0]))};
 }
 
-template <util::Numeric value_t, size_t dim_s>
+template <util::Numeric value_t, size_t dim_s, ArenaType arena_e>
 template <typename other_t>
-constexpr auto Vec<value_t, dim_s>::hadamard(other_t&& other) const noexcept
+constexpr auto Vec<value_t, dim_s, arena_e>::hadamard(other_t&& other) const noexcept
     -> Vec requires util::is_same_dim<Vec, other_t>
 {
-  Vec<value_t, dim_s> temp{*this};
+  Vec<value_t, dim_s, arena_e> temp{*this};
   for ( size_t i = 0; i < dim_s; ++i ) {
     temp[i] *= static_cast<value_t>(other[i]);
   }
   return temp;
+}
+
+/**
+   * @brief Computes the outer product of two vectors
+   * 
+   * @tparam other_dim 
+   * @param other 
+   * @return Matrix<other_dim, dim> 
+   */
+template <util::Numeric value_t, size_t dim_s, ArenaType arena_e>
+template <size_t other_dim>
+CNTNS_VEC_FUNC auto Vec<value_t, dim_s, arena_e>::outer_product(Vec<value_t, other_dim, arena_e> const& other) const
+    -> Matrix<value_t, other_dim, dim_s, arena_e>
+{
+  Matrix<value_t, other_dim, dim_s, arena_e> result{};
+  for ( size_t k = 0; k < dim_s; ++k ) {
+    for ( size_t j = 0; j < other_dim; ++j ) {
+      result(j, k) = _values[k] * other[j];
+    }
+  }
+  return result;
 }
 }  // namespace cntns
