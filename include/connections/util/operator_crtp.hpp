@@ -38,28 +38,32 @@ class Operators : public util::Self<Operators<class_t>> {
 
  public:
   template <typename other_t>
-  requires has_addition<class_t, other_t> CNTNS_INLINE constexpr auto operator+=(other_t&& other) -> decltype(auto)
+  requires has_addition<class_t, other_t> CNTNS_INLINE constexpr auto
+  operator+=(other_t&& other) -> decltype(auto)
   {
     self() = self() + std::forward<other_t>(other);
     return self();
   }
 
   template <typename other_t>
-  requires has_subtract<class_t, other_t> CNTNS_INLINE constexpr auto operator-=(other_t&& other) -> decltype(auto)
+  requires has_subtract<class_t, other_t> CNTNS_INLINE constexpr auto
+  operator-=(other_t&& other) -> decltype(auto)
   {
     self() = self() - std::forward<other_t>(other);
     return self();
   }
 
   template <typename other_t>
-  requires has_multiply<class_t, other_t> CNTNS_INLINE constexpr auto operator*=(other_t&& other) -> decltype(auto)
+  requires has_multiply<class_t, other_t> CNTNS_INLINE constexpr auto
+  operator*=(other_t&& other) -> decltype(auto)
   {
     self() = self() * std::forward<other_t>(other);
     return self();
   }
 
   template <typename other_t>
-  requires has_divide<class_t, other_t> CNTNS_INLINE constexpr auto operator/=(other_t&& other) -> decltype(auto)
+  requires has_divide<class_t, other_t> CNTNS_INLINE constexpr auto operator/=(
+      other_t&& other) -> decltype(auto)
   {
     self() = self() / std::forward<other_t>(other);
     return self();

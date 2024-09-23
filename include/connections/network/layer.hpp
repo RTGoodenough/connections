@@ -7,7 +7,8 @@
 #include "connections/network/arena.hpp"
 
 namespace cntns {
-template <size_t input_s, size_t output_s, typename activation_t, ArenaType arena_e>
+template <size_t input_s, size_t output_s, typename activation_t,
+          ArenaType arena_e>
 class Layer {
  public:
   static constexpr size_t IN_SIZE = input_s;
@@ -16,14 +17,25 @@ class Layer {
   using out_vec_t = Vec<double, output_s, arena_e>;
   using weights_t = Matrix<double, output_s, input_s, arena_e>;
 
-  [[nodiscard]] constexpr auto evaluate(in_vec_t const& input) -> out_vec_t const&;
-  [[nodiscard]] constexpr auto back_propagate(in_vec_t const& input, out_vec_t&& error) -> in_vec_t;
+  [[nodiscard]] constexpr auto evaluate(in_vec_t const& input)
+      -> out_vec_t const&;
+  [[nodiscard]] constexpr auto back_propagate(in_vec_t const& input,
+                                              out_vec_t&& error) -> in_vec_t;
 
   void update_weights(double learningRate, size_t batchSize);
 
-  [[nodiscard]] constexpr auto get_weights() const -> weights_t const& { return _weights; }
-  [[nodiscard]] constexpr auto get_biases() const -> out_vec_t const& { return _biases; }
-  [[nodiscard]] constexpr auto get_activations() const -> out_vec_t const& { return _activations; }
+  [[nodiscard]] constexpr auto get_weights() const -> weights_t const&
+  {
+    return _weights;
+  }
+  [[nodiscard]] constexpr auto get_biases() const -> out_vec_t const&
+  {
+    return _biases;
+  }
+  [[nodiscard]] constexpr auto get_activations() const -> out_vec_t const&
+  {
+    return _activations;
+  }
 
  private:
   weights_t _weights{};
@@ -34,16 +46,18 @@ class Layer {
   out_vec_t _biasDeltas;
 
  public:
-  Layer() = default;
-  Layer(Layer const&) = default;
-  Layer(Layer&&) noexcept = default;
-  auto operator=(Layer const&) -> Layer& = default;
-  auto operator=(Layer&&) noexcept -> Layer& = default;
-  ~Layer() = default;
+  Layer() : _weights{weights_t::random()}, _biases{out_vec_t::random()} {}
+  constexpr Layer(Layer const&) = default;
+  constexpr Layer(Layer&&) noexcept = default;
+  constexpr auto operator=(Layer const&) -> Layer& = default;
+  constexpr auto operator=(Layer&&) noexcept -> Layer& = default;
+  constexpr ~Layer() = default;
 };
 
-template <size_t input_s, size_t output_s, typename activation_t, ArenaType arena_e>
-constexpr auto Layer<input_s, output_s, activation_t, arena_e>::evaluate(in_vec_t const& input) -> out_vec_t const&
+template <size_t input_s, size_t output_s, typename activation_t,
+          ArenaType arena_e>
+constexpr auto Layer<input_s, output_s, activation_t, arena_e>::evaluate(
+    in_vec_t const& input) -> out_vec_t const&
 {
   // Transform input by the neuron weights, add bias, and apply the activation function
   // a_l = o_l(w_l * a_l-1 + b_l)
@@ -53,14 +67,15 @@ constexpr auto Layer<input_s, output_s, activation_t, arena_e>::evaluate(in_vec_
   return _activations;
 }
 
-template <size_t input_s, size_t output_s, typename activation_t, ArenaType arena_e>
-constexpr auto Layer<input_s, output_s, activation_t, arena_e>::back_propagate(in_vec_t const& input, out_vec_t&& error)
-    -> in_vec_t
+template <size_t input_s, size_t output_s, typename activation_t,
+          ArenaType arena_e>
+constexpr auto Layer<input_s, output_s, activation_t, arena_e>::back_propagate(
+    in_vec_t const& input, out_vec_t&& error) -> in_vec_t
 {
   // Move the error back through the layer
 
   // First apply the derivative of the activation function
-  error = error.hadamard(activation_t::derivative(_activations));
+  error *= activation_t::derivative(_activations);
 
   // Update the weight and bias deltas
 
@@ -78,8 +93,10 @@ constexpr auto Layer<input_s, output_s, activation_t, arena_e>::back_propagate(i
  * @brief Updates the weights of the layer
  * 
  */
-template <size_t input_s, size_t output_s, typename activation_t, ArenaType arena_e>
-void Layer<input_s, output_s, activation_t, arena_e>::update_weights(double learningRate, size_t batchSize)
+template <size_t input_s, size_t output_s, typename activation_t,
+          ArenaType arena_e>
+void Layer<input_s, output_s, activation_t, arena_e>::update_weights(
+    double learningRate, size_t batchSize)
 {
   double const learningScale = (learningRate / static_cast<double>(batchSize));
   _weights += (_weightDeltas *= learningScale);

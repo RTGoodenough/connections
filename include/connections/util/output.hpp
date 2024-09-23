@@ -4,6 +4,9 @@
 #include <utility>
 
 namespace cntns::output {
+
+// NOLINTBEGIN(cppcoreguidelines-pro-type-vararg)
+
 /**
  * @brief Clears the console
  * 
@@ -29,4 +32,7 @@ inline void message(char const* str, arg_ts&&... values)
     std::printf(str, std::forward<arg_ts>(values)...);
   }
 }
+
+// NOLINTEND(cppcoreguidelines-pro-type-vararg)
+
 }  // namespace cntns::output

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <algorithm>
+#include <numeric>
 
 #include "connections/linear_algebra/vector.hpp"
 #include "connections/network/arena.hpp"
@@ -9,47 +10,75 @@
 namespace cntns {
 
 struct Sigmoid {
-  [[nodiscard]] static auto eval(double value) noexcept -> double { return 1 / (1 + std::exp(value)); }
-  [[nodiscard]] static auto derivative(double value) noexcept -> double { return value * (1.0 - value); }
-
   template <util::Numeric data_t, size_t dim_s>
   [[nodiscard]] static auto eval(Vec<data_t, dim_s, ArenaType::CPU> const& vec)
   {
-    Vec<data_t, dim_s, ArenaType::CPU> retVal;
-    for ( size_t i = 0; i < dim_s; ++i ) retVal[i] = eval(vec[i]);
-    return retVal;
+    Vec<data_t, dim_s, ArenaType::CPU> result;
+    std::transform(vec.begin(), vec.end(), result.begin(),
+                   [](auto value) { return 1.0F / (1.0F + std::exp(-value)); });
+    return result;
   }
 
   template <util::Numeric data_t, size_t dim_s>
-  [[nodiscard]] static auto derivative(Vec<data_t, dim_s, ArenaType::CPU> const& vec)
+  [[nodiscard]] static auto derivative(
+      Vec<data_t, dim_s, ArenaType::CPU> const& vec)
   {
-    Vec<data_t, dim_s, ArenaType::CPU> retVal;
-    for ( size_t i = 0; i < dim_s; ++i ) retVal[i] = derivative(vec[i]);
-    return retVal;
+    Vec<data_t, dim_s, ArenaType::CPU> result;
+    std::transform(vec.begin(), vec.end(), result.begin(),
+                   [](auto value) { return value * (1.0F - value); });
+    return result;
   }
 };
 
 struct ReLu {
-  [[nodiscard]] static auto eval(double value) noexcept -> double { return value >= 0 ? value : 0.0; }
-  [[nodiscard]] static auto derivative(double value) noexcept -> double { return value >= 0 ? 1.0 : 0.0; }
-
   template <util::Numeric data_t, size_t dim_s>
   [[nodiscard]] static auto eval(Vec<data_t, dim_s, ArenaType::CPU> const& vec)
   {
-    Vec<data_t, dim_s, ArenaType::CPU> retVal;
-    for ( size_t i = 0; i < dim_s; ++i ) retVal[i] = eval(vec[i]);
-    return retVal;
+    Vec<data_t, dim_s, ArenaType::CPU> result;
+    std::transform(vec.begin(), vec.end(), result.begin(),
+                   [](auto value) { return value >= 0 ? value : 0.0; });
+    return result;
   }
 
   template <util::Numeric data_t, size_t dim_s>
-  [[nodiscard]] static auto derivative(Vec<data_t, dim_s, ArenaType::CPU> const& vec)
+  [[nodiscard]] static auto derivative(
+      Vec<data_t, dim_s, ArenaType::CPU> const& vec)
   {
-    Vec<data_t, dim_s, ArenaType::CPU> retVal;
-    for ( size_t i = 0; i < dim_s; ++i ) retVal[i] = derivative(vec[i]);
-    return retVal;
+    Vec<data_t, dim_s, ArenaType::CPU> result;
+    std::transform(vec.begin(), vec.end(), result.begin(),
+                   [](auto value) { return value >= 0 ? 1.0 : 0.0; });
+    return result;
   }
 };
 
 struct Tanh {};
+
+struct SoftMax {
+  template <util::Numeric data_t, size_t dim_s>
+  [[nodiscard]] static auto eval(Vec<data_t, dim_s, ArenaType::CPU> const& vec)
+  {
+    Vec<data_t, dim_s, ArenaType::CPU> prob;
+    Vec<data_t, dim_s, ArenaType::CPU> exp;
+    double max = *std::max_element(vec.begin(), vec.end());
+
+    for ( size_t i = 0; i < dim_s; ++i ) {
+      exp[i] = std::exp(vec[i] - max);
+    }
+
+    double expSum = std::accumulate(exp.begin(), exp.end(), 0.0);
+    for ( size_t i = 0; i < dim_s; ++i ) {
+      prob[i] = exp[i] / expSum;
+    }
+
+    return prob;
+  }
+
+  template <util::Numeric data_t, size_t dim_s>
+  [[nodiscard]] static auto derivative(
+      Vec<data_t, dim_s, ArenaType::CPU> const& vec)
+  {
+    return vec;
+  }
+};
 
 }  // namespace cntns

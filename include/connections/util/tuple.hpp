@@ -12,9 +12,11 @@ namespace cntns::util {
  * @return std::tuple<tail...> 
  */
 template <typename head, typename... tail>
-constexpr auto tuple_tail(std::tuple<head, tail...>& tuple) -> std::tuple<tail&...>
+constexpr auto tuple_tail(std::tuple<head, tail...>& tuple)
+    -> std::tuple<tail&...>
 {
-  return std::apply([](auto&&, auto&... args) { return std::tie(args...); }, tuple);
+  return std::apply([](auto&&, auto&... args) { return std::tie(args...); },
+                    tuple);
 }
 
 /**
@@ -26,6 +28,7 @@ template <typename tuple_t>
 // NOLINTNEXTLINE
 struct tuple_size {
   // NOLINTNEXTLINE
-  static constexpr std::size_t value = std::tuple_size_v<std::remove_cvref_t<tuple_t>>;
+  static constexpr std::size_t value =
+      std::tuple_size_v<std::remove_cvref_t<tuple_t>>;
 };
 }  // namespace cntns::util
