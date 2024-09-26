@@ -28,7 +28,7 @@ template <typename tuple_t>
 // NOLINTNEXTLINE
 struct tuple_size {
   // NOLINTNEXTLINE
-  static constexpr std::size_t value =
+  static constexpr size_t value =
       std::tuple_size_v<std::remove_cvref_t<tuple_t>>;
 };
 }  // namespace cntns::util

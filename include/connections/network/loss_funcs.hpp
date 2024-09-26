@@ -7,7 +7,7 @@
 namespace cntns {
 
 struct MSE {
-  template <util::Numeric data_t, std::size_t dim_s>
+  template <util::Numeric data_t, size_t dim_s>
   [[nodiscard]] static auto error(
       Vec<data_t, dim_s, ArenaType::CPU> const& correct,
       Vec<data_t, dim_s, ArenaType::CPU> const& result)
@@ -16,7 +16,7 @@ struct MSE {
     return correct - result;
   }
 
-  template <util::Numeric data_t, std::size_t dim_s>
+  template <util::Numeric data_t, size_t dim_s>
   [[nodiscard]] static auto loss(
       Vec<data_t, dim_s, ArenaType::CPU> const& correct,
       Vec<data_t, dim_s, ArenaType::CPU> const& result) -> double
@@ -29,7 +29,7 @@ struct MSE {
 };
 
 struct CrossEntropy {
-  template <util::Numeric data_t, std::size_t dim_s>
+  template <util::Numeric data_t, size_t dim_s>
   [[nodiscard]] static auto error(
       Vec<data_t, dim_s, ArenaType::CPU> const& correct,
       Vec<data_t, dim_s, ArenaType::CPU> const& result)
@@ -38,7 +38,7 @@ struct CrossEntropy {
     return correct - result;
   }
 
-  template <util::Numeric data_t, std::size_t dim_s>
+  template <util::Numeric data_t, size_t dim_s>
   [[nodiscard]] static auto loss(
       Vec<data_t, dim_s, ArenaType::CPU> const& correct,
       Vec<data_t, dim_s, ArenaType::CPU> const& result) -> double
