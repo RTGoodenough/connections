@@ -4,44 +4,61 @@
 #include <numeric>
 #include "connections/linear_algebra/vector.hpp"
 #include "connections/network/arena.hpp"
+
 namespace cntns {
 
 struct MSE {
-  template <util::Numeric data_t, size_t dim_s>
-  [[nodiscard]] static auto error(
-      Vec<data_t, dim_s, ArenaType::CPU> const& correct,
-      Vec<data_t, dim_s, ArenaType::CPU> const& result)
-      -> Vec<data_t, dim_s, ArenaType::CPU>
+  template <size_t dim_s>
+  [[nodiscard]] static auto error(Vec<dim_s, ArenaType::CPU> const& correct,
+                                  Vec<dim_s, ArenaType::CPU> const& result)
+      -> Vec<dim_s, ArenaType::CPU>
   {
     return correct - result;
   }
 
-  template <util::Numeric data_t, size_t dim_s>
-  [[nodiscard]] static auto loss(
-      Vec<data_t, dim_s, ArenaType::CPU> const& correct,
-      Vec<data_t, dim_s, ArenaType::CPU> const& result) -> double
+  template <size_t dim_s>
+  [[nodiscard]] static auto loss(Vec<dim_s, ArenaType::CPU> const& correct,
+                                 Vec<dim_s, ArenaType::CPU> const& result)
+      -> double
   {
-    constexpr data_t                   HALF = 0.5;
-    Vec<data_t, dim_s, ArenaType::CPU> error = correct - result;
+    constexpr double           HALF = 0.5;
+    Vec<dim_s, ArenaType::CPU> error = correct - result;
     return (HALF * dim_s) *
            std::inner_product(error.begin(), error.end(), error.begin(), 0.0F);
   }
-};
 
-struct CrossEntropy {
-  template <util::Numeric data_t, size_t dim_s>
-  [[nodiscard]] static auto error(
-      Vec<data_t, dim_s, ArenaType::CPU> const& correct,
-      Vec<data_t, dim_s, ArenaType::CPU> const& result)
-      -> Vec<data_t, dim_s, ArenaType::CPU>
+#ifdef CNTNS_USE_CUDA
+  template <size_t dim_s>
+  [[nodiscard]] static auto error(Vec<dim_s, ArenaType::GPU> const& correct,
+                                  Vec<dim_s, ArenaType::GPU> const& result)
+      -> Vec<dim_s, ArenaType::GPU>
   {
     return correct - result;
   }
 
-  template <util::Numeric data_t, size_t dim_s>
-  [[nodiscard]] static auto loss(
-      Vec<data_t, dim_s, ArenaType::CPU> const& correct,
-      Vec<data_t, dim_s, ArenaType::CPU> const& result) -> double
+  template <size_t dim_s>
+  [[nodiscard]] static auto loss(Vec<dim_s, ArenaType::GPU> const& correct,
+                                 Vec<dim_s, ArenaType::GPU> const& result)
+      -> double
+  {
+    return 0;
+  }
+#endif
+};
+
+struct CrossEntropy {
+  template <size_t dim_s>
+  [[nodiscard]] static auto error(Vec<dim_s, ArenaType::CPU> const& correct,
+                                  Vec<dim_s, ArenaType::CPU> const& result)
+      -> Vec<dim_s, ArenaType::CPU>
+  {
+    return correct - result;
+  }
+
+  template <size_t dim_s>
+  [[nodiscard]] static auto loss(Vec<dim_s, ArenaType::CPU> const& correct,
+                                 Vec<dim_s, ArenaType::CPU> const& result)
+      -> double
   {
     double lossVal{};
 
@@ -50,6 +67,24 @@ struct CrossEntropy {
 
     return -lossVal;
   }
+
+#ifdef CNTNS_USE_CUDA
+  template <size_t dim_s>
+  [[nodiscard]] static auto error(Vec<dim_s, ArenaType::GPU> const& correct,
+                                  Vec<dim_s, ArenaType::GPU> const& result)
+      -> Vec<dim_s, ArenaType::GPU>
+  {
+    return correct - result;
+  }
+
+  template <size_t dim_s>
+  [[nodiscard]] static auto loss(Vec<dim_s, ArenaType::GPU> const& correct,
+                                 Vec<dim_s, ArenaType::GPU> const& result)
+      -> double
+  {
+    return 0;
+  }
+#endif
 };
 
 }  // namespace cntns

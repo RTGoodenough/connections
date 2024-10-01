@@ -1,5 +1,7 @@
 #pragma once
 
+#include <connections/network/arena.hpp>
+#include "connections/linear_algebra/vector.hpp"
 #ifdef CNTNS_USE_CUDA
 
 #include <cstddef>
@@ -43,6 +45,18 @@ inline auto memory_usage()
                static_cast<float>(totalByte) * 100.0F;
 
   return used;
+}
+
+template <typename value_t>
+inline auto get_return(auto&& kernel) -> value_t
+{
+  value_t  hAnswer{};
+  value_t* dAnswer{};
+  cudaMalloc(&dAnswer, sizeof(value_t));
+  kernel(dAnswer);
+  cudaMemcpy(&hAnswer, dAnswer, sizeof(value_t), cudaMemcpyDeviceToHost);
+  cudaFree(dAnswer);
+  return hAnswer;
 }
 }  // namespace cntns::util
 

@@ -8,13 +8,17 @@ set(CMAKE_CUDA_STANDARD 20)
 set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 add_library(
   ${CNTNS_NAME}
-  SHARED
+  STATIC
   src/matrix.cu
   src/vector.cu
+  src/activations.cu
+  src/loss.cu
 )
+
 target_include_directories(${CNTNS_NAME} INTERFACE 
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include>

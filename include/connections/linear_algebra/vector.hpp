@@ -6,10 +6,10 @@
 #include "connections/util/concepts/types.hpp"
 
 namespace cntns {
-template <util::Numeric data_t, size_t dim_s, ArenaType arena_e>
+template <size_t dim_s, ArenaType arena_e>
 class Vec;
 
-template <typename value_t, size_t rows, size_t cols, ArenaType arena_e>
+template <size_t rows, size_t cols, ArenaType arena_e>
 class Matrix;
 }  // namespace cntns
 
@@ -22,8 +22,8 @@ class Matrix;
 #else
 
 namespace cntns {
-template <util::Numeric data_t, size_t dim_s>
-class Vec<data_t, dim_s, ArenaType::GPU> {
+template <size_t dim_s>
+class Vec<dim_s, ArenaType::GPU> {
 };
 }  // namespace cntns
 

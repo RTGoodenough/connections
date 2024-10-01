@@ -4,6 +4,7 @@
 
 #include "connections/linear_algebra/matrix.hpp"
 #include "connections/linear_algebra/vector.hpp"
+
 #include "connections/network/arena.hpp"
 
 namespace cntns {
@@ -13,9 +14,9 @@ class Layer {
  public:
   static constexpr size_t IN_SIZE = input_s;
   static constexpr size_t OUT_SIZE = output_s;
-  using in_vec_t = Vec<double, input_s, arena_e>;
-  using out_vec_t = Vec<double, output_s, arena_e>;
-  using weights_t = Matrix<double, output_s, input_s, arena_e>;
+  using in_vec_t = Vec<input_s, arena_e>;
+  using out_vec_t = Vec<output_s, arena_e>;
+  using weights_t = Matrix<output_s, input_s, arena_e>;
 
   [[nodiscard]] constexpr auto evaluate(in_vec_t const& input)
       -> out_vec_t const&;

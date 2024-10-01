@@ -19,15 +19,15 @@ namespace cntns {
  * @tparam rows 
  * @tparam cols 
  */
-template <typename value_t, size_t rows, size_t cols>
-class Matrix<value_t, rows, cols, ArenaType::CPU>
-    : public util::Operators<Matrix<value_t, rows, cols, ArenaType::CPU>> {
-  friend Matrix<value_t, cols, rows, ArenaType::CPU>;
+template <size_t rows, size_t cols>
+class Matrix<rows, cols, ArenaType::CPU>
+    : public util::Operators<Matrix<rows, cols, ArenaType::CPU>> {
+  friend Matrix<cols, rows, ArenaType::CPU>;
 
-  using Mat = Matrix<value_t, rows, cols, ArenaType::CPU>;
-  using MatTranspose = Matrix<value_t, cols, rows, ArenaType::CPU>;
-  using InputVec = Vec<value_t, cols, ArenaType::CPU>;
-  using OutputVec = Vec<value_t, rows, ArenaType::CPU>;
+  using Mat = Matrix<rows, cols, ArenaType::CPU>;
+  using MatTranspose = Matrix<cols, rows, ArenaType::CPU>;
+  using InputVec = Vec<cols, ArenaType::CPU>;
+  using OutputVec = Vec<rows, ArenaType::CPU>;
 
  public:
   static constexpr size_t NUM_ROWS = rows;
@@ -38,12 +38,12 @@ class Matrix<value_t, rows, cols, ArenaType::CPU>
   [[nodiscard]] static auto    random() -> Mat;
   [[nodiscard]] constexpr auto transpose() const -> MatTranspose;
 
-  [[nodiscard]] constexpr auto values() const -> std::vector<float> const&
+  [[nodiscard]] constexpr auto values() const -> std::vector<double> const&
   {
     return _values;
   }
 
-  [[nodiscard]] constexpr auto operator()(size_t row, size_t col) -> float&
+  [[nodiscard]] constexpr auto operator()(size_t row, size_t col) -> double&
   {
     return _values[row * cols + col];
   }
@@ -51,12 +51,12 @@ class Matrix<value_t, rows, cols, ArenaType::CPU>
   [[nodiscard]] constexpr auto operator+(Mat const& other) const -> Mat;
   [[nodiscard]] constexpr auto operator-(Mat const& other) const -> Mat;
 
-  [[nodiscard]] constexpr auto operator*(float scalar) const -> Mat;
+  [[nodiscard]] constexpr auto operator*(double scalar) const -> Mat;
   [[nodiscard]] constexpr auto operator*(InputVec const& input) const
       -> OutputVec;
 
  private:
-  std::vector<float> _values;
+  std::vector<double> _values;
 
  public:
   Matrix() : _values(rows * cols) {}
@@ -74,9 +74,9 @@ class Matrix<value_t, rows, cols, ArenaType::CPU>
  * @tparam cols 
  * @return MatTranspose 
  */
-template <typename value_t, size_t rows, size_t cols>
-[[nodiscard]] constexpr auto
-Matrix<value_t, rows, cols, ArenaType::CPU>::transpose() const -> MatTranspose
+template <size_t rows, size_t cols>
+[[nodiscard]] constexpr auto Matrix<rows, cols, ArenaType::CPU>::transpose()
+    const -> MatTranspose
 {
   MatTranspose result{};
   for ( size_t i = 0; i < rows; ++i ) {
@@ -94,14 +94,14 @@ Matrix<value_t, rows, cols, ArenaType::CPU>::transpose() const -> MatTranspose
  * @tparam cols 
  * @return Mat 
  */
-template <typename value_t, size_t rows, size_t cols>
-[[nodiscard]] auto Matrix<value_t, rows, cols, ArenaType::CPU>::random() -> Mat
+template <size_t rows, size_t cols>
+[[nodiscard]] auto Matrix<rows, cols, ArenaType::CPU>::random() -> Mat
 {
   Mat result{};
   result._values.resize(rows * cols);
-  std::random_device                    rand;
-  std::default_random_engine            gen(rand());
-  std::uniform_real_distribution<float> dist(-1.0F, 1.0F);
+  std::random_device                     rand;
+  std::default_random_engine             gen(rand());
+  std::uniform_real_distribution<double> dist(-1.0F, 1.0F);
 
   for ( auto& value : result._values ) {
     value = dist(gen);
@@ -118,8 +118,8 @@ template <typename value_t, size_t rows, size_t cols>
  * @param other 
  * @return Mat 
  */
-template <typename value_t, size_t rows, size_t cols>
-constexpr auto Matrix<value_t, rows, cols, ArenaType::CPU>::operator+(
+template <size_t rows, size_t cols>
+constexpr auto Matrix<rows, cols, ArenaType::CPU>::operator+(
     Mat const& other) const -> Mat
 {
   Mat result{};
@@ -137,8 +137,8 @@ constexpr auto Matrix<value_t, rows, cols, ArenaType::CPU>::operator+(
  * @param other 
  * @return Mat 
  */
-template <typename value_t, size_t rows, size_t cols>
-constexpr auto Matrix<value_t, rows, cols, ArenaType::CPU>::operator-(
+template <size_t rows, size_t cols>
+constexpr auto Matrix<rows, cols, ArenaType::CPU>::operator-(
     Mat const& other) const -> Mat
 {
   Mat result{};
@@ -156,9 +156,8 @@ constexpr auto Matrix<value_t, rows, cols, ArenaType::CPU>::operator-(
  * @param input 
  * @return Vec<rows> 
  */
-template <typename value_t, size_t rows, size_t cols>
-[[nodiscard]] constexpr auto
-Matrix<value_t, rows, cols, ArenaType::CPU>::operator*(
+template <size_t rows, size_t cols>
+[[nodiscard]] constexpr auto Matrix<rows, cols, ArenaType::CPU>::operator*(
     InputVec const& input) const -> OutputVec
 {
   OutputVec result{};
@@ -179,10 +178,9 @@ Matrix<value_t, rows, cols, ArenaType::CPU>::operator*(
  * @param scalar 
  * @return Mat 
  */
-template <typename value_t, size_t rows, size_t cols>
-[[nodiscard]] constexpr auto
-Matrix<value_t, rows, cols, ArenaType::CPU>::operator*(float scalar) const
-    -> Mat
+template <size_t rows, size_t cols>
+[[nodiscard]] constexpr auto Matrix<rows, cols, ArenaType::CPU>::operator*(
+    double scalar) const -> Mat
 {
   Mat result{};
   std::transform(_values.begin(), _values.end(), result._values.begin(),

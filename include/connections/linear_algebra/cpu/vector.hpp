@@ -21,22 +21,27 @@ namespace cntns {
 
 #define CNTNS_VEC_FUNC [[nodiscard]] CNTNS_INLINE CNTNS_PERF_FUNC constexpr
 
-template <util::Numeric data_t, size_t dim_s, ArenaType arena_e>
+template <size_t dim_s, ArenaType arena_e>
 class Vec;
-template <typename value_t, size_t rows, size_t cols, ArenaType arena_e>
+template <size_t rows, size_t cols, ArenaType arena_e>
 class Matrix;
 
-template <util::Numeric data_t, size_t dim_s>
-class Vec<data_t, dim_s, ArenaType::CPU>
-    : public util::Operators<Vec<data_t, dim_s, ArenaType::CPU>> {
+template <size_t dim_s>
+class Vec<dim_s, ArenaType::CPU>
+    : public util::Operators<Vec<dim_s, ArenaType::CPU>> {
  public:
-  using value_t = data_t;
-  using array_t = std::array<value_t, dim_s>;
+  using array_t = std::array<double, dim_s>;
   static constexpr size_t DIM = dim_s;
 
   static auto random() -> Vec;
 
   constexpr void zero() { std::fill(_values.begin(), _values.end(), 0.0F); }
+
+  CNTNS_VEC_FUNC auto data() const noexcept -> array_t const&
+  {
+    return _values;
+  }
+  CNTNS_VEC_FUNC auto data() noexcept -> array_t& { return _values; }
 
   CNTNS_VEC_FUNC auto mag() const noexcept -> double;
   CNTNS_VEC_FUNC auto mag_2() const noexcept -> double;
@@ -57,11 +62,10 @@ class Vec<data_t, dim_s, ArenaType::CPU>
    * @return Matrix<other_dim, dim> 
    */
   template <size_t other_dim>
-  CNTNS_VEC_FUNC auto outer_product(
-      Vec<value_t, other_dim, ArenaType::CPU> const& other) const
-      -> Matrix<value_t, other_dim, dim_s, ArenaType::CPU>;
+  CNTNS_VEC_FUNC auto outer_product(Vec<other_dim, ArenaType::CPU> const& other)
+      const -> Matrix<other_dim, dim_s, ArenaType::CPU>;
 
-  CNTNS_VEC_FUNC auto at(size_t idx) const noexcept -> value_t const&
+  CNTNS_VEC_FUNC auto at(size_t idx) const noexcept -> double const&
   {
     return _values[idx];
   }
@@ -80,13 +84,13 @@ class Vec<data_t, dim_s, ArenaType::CPU>
   constexpr explicit Vec(array_t const& vals) noexcept : _values(vals) {}
   constexpr explicit Vec(array_t&& vals) noexcept : _values(vals) {}
 
-  template <typename... args_t>
-  requires util::all_convertible_to<value_t, args_t...>
-  constexpr explicit Vec(args_t const&... args) noexcept
-      : _values(to_array(args...))
-  {
-    static_assert(sizeof...(args) <= dim_s);
-  }
+  // template <typename... args_t>
+  // requires util::all_convertible_to<args_t...>
+  // constexpr explicit Vec(args_t const&... args) noexcept
+  //     : _values(to_array(args...))
+  // {
+  //   static_assert(sizeof...(args) <= dim_s);
+  // }
 
   template <typename other_t>
   constexpr explicit Vec(
@@ -104,7 +108,7 @@ class Vec<data_t, dim_s, ArenaType::CPU>
       (not std::is_same_v<other_t, Vec>)
   {
     for ( size_t i = 0; i < other_t::DIM; ++i ) {
-      _values[i] = static_cast<value_t>(other[i]);
+      _values[i] = static_cast<double>(other[i]);
     }
   }
 
@@ -114,7 +118,7 @@ class Vec<data_t, dim_s, ArenaType::CPU>
       (not std::is_same_v<other_t, Vec>)
   {
     for ( size_t i = 0; i < other_t::DIM; ++i ) {
-      _values[i] = static_cast<value_t>(other[i]);
+      _values[i] = static_cast<double>(other[i]);
     }
     return *this;
   }
@@ -125,7 +129,7 @@ class Vec<data_t, dim_s, ArenaType::CPU>
       (not std::is_same_v<other_t, Vec>)
   {
     for ( size_t i = 0; i < other_t::DIM; ++i ) {
-      _values[i] = static_cast<value_t>(other[i]);
+      _values[i] = static_cast<double>(other[i]);
     }
     return *this;
   }
@@ -139,12 +143,12 @@ class Vec<data_t, dim_s, ArenaType::CPU>
 
   CNTNS_VEC_FUNC auto operator<=>(Vec const&) const noexcept = default;
 
-  CNTNS_VEC_FUNC auto operator[](size_t idx) const noexcept -> value_t const&
+  CNTNS_VEC_FUNC auto operator[](size_t idx) const noexcept -> double const&
   {
     assert(idx < dim_s);
     return _values[idx];
   }
-  CNTNS_VEC_FUNC auto operator[](size_t idx) noexcept -> value_t&
+  CNTNS_VEC_FUNC auto operator[](size_t idx) noexcept -> double&
   {
     assert(idx < dim_s);
     return _values[idx];
@@ -194,28 +198,28 @@ class Vec<data_t, dim_s, ArenaType::CPU>
  private:
   template <typename... args_t>
   constexpr auto to_array(args_t&&... args)
-      -> std::array<value_t, sizeof...(args_t)>
+      -> std::array<double, sizeof...(args_t)>
   {
-    return {{(static_cast<value_t>(std::forward<args_t>(args)))...}};
+    return {{(static_cast<double>(std::forward<args_t>(args)))...}};
   }
 };
 
-using Vec2_dc = Vec<double, 2, ArenaType::CPU>;
-using Vec2_fc = Vec<float, 2, ArenaType::CPU>;
-using Vec3_dc = Vec<double, 3, ArenaType::CPU>;
-using Vec3_fc = Vec<float, 3, ArenaType::CPU>;
+using Vec2_c = Vec<2, ArenaType::CPU>;
+using Vec2_c = Vec<2, ArenaType::CPU>;
+using Vec3_c = Vec<3, ArenaType::CPU>;
+using Vec3_c = Vec<3, ArenaType::CPU>;
 
-using Vec2_dg = Vec<double, 2, ArenaType::GPU>;
-using Vec2_fg = Vec<float, 2, ArenaType::GPU>;
-using Vec3_dg = Vec<double, 3, ArenaType::GPU>;
-using Vec3_fg = Vec<float, 3, ArenaType::GPU>;
+using Vec2_g = Vec<2, ArenaType::GPU>;
+using Vec2_g = Vec<2, ArenaType::GPU>;
+using Vec3_g = Vec<3, ArenaType::GPU>;
+using Vec3_g = Vec<3, ArenaType::GPU>;
 
 // ==========================================================================================
 // ================================== IMPLEMENTATION ========================================
 // ==========================================================================================
 
-template <util::Numeric value_t, size_t dim_s>
-auto Vec<value_t, dim_s, ArenaType::CPU>::random() -> Vec
+template <size_t dim_s>
+auto Vec<dim_s, ArenaType::CPU>::random() -> Vec
 {
   Vec                             result{};
   std::random_device              rand;
@@ -227,15 +231,14 @@ auto Vec<value_t, dim_s, ArenaType::CPU>::random() -> Vec
   return result;
 }
 
-template <util::Numeric value_t, typename vec_t>
-constexpr auto operator*(value_t&& other, vec_t&& vec) -> decltype(auto)
+template <typename vec_t>
+constexpr auto operator*(double&& other, vec_t&& vec) -> decltype(auto)
 {
-  return std::forward<vec_t>(vec) * std::forward<value_t>(other);
+  return std::forward<vec_t>(vec) * std::forward<double>(other);
 }
 
-template <util::Numeric value_t, size_t dim_s>
-constexpr auto Vec<value_t, dim_s, ArenaType::CPU>::mag() const noexcept
-    -> double
+template <size_t dim_s>
+constexpr auto Vec<dim_s, ArenaType::CPU>::mag() const noexcept -> double
 {
   double sum = 0.0;
   for ( size_t i = 0; i < dim_s; ++i ) {
@@ -244,9 +247,8 @@ constexpr auto Vec<value_t, dim_s, ArenaType::CPU>::mag() const noexcept
   return std::sqrt(sum);
 }
 
-template <util::Numeric value_t, size_t dim_s>
-constexpr auto Vec<value_t, dim_s, ArenaType::CPU>::mag_2() const noexcept
-    -> double
+template <size_t dim_s>
+constexpr auto Vec<dim_s, ArenaType::CPU>::mag_2() const noexcept -> double
 {
   double sum = 0.0;
   for ( size_t i = 0; i < dim_s; ++i ) {
@@ -255,31 +257,30 @@ constexpr auto Vec<value_t, dim_s, ArenaType::CPU>::mag_2() const noexcept
   return sum;
 }
 
-template <util::Numeric value_t, size_t dim_s>
+template <size_t dim_s>
 template <typename other_t>
-constexpr auto Vec<value_t, dim_s, ArenaType::CPU>::dot(other_t&& other)
-    const noexcept -> double requires util::is_same_dim<Vec, other_t>
+constexpr auto Vec<dim_s, ArenaType::CPU>::dot(other_t&& other) const noexcept
+    -> double requires util::is_same_dim<Vec, other_t>
 {
   double sum = 0.0;
   for ( size_t i = 0; i < dim_s; ++i ) {
-    sum += (*this)[i] * static_cast<value_t>(other[i]);
+    sum += (*this)[i] * static_cast<double>(other[i]);
   }
   return sum;
 }
 
-template <util::Numeric value_t, size_t dim_s>
+template <size_t dim_s>
 template <typename other_t>
-constexpr auto Vec<value_t, dim_s, ArenaType::CPU>::cross(
-    other_t&& other) const noexcept
+constexpr auto Vec<dim_s, ArenaType::CPU>::cross(other_t&& other) const noexcept
     -> Vec requires util::is_3d<Vec> && util::is_same_dim<Vec, other_t>
 {
   auto const& vec = *this;
-  return Vec{(vec[1] * static_cast<value_t>(other[2]) -
-              vec[2] * static_cast<value_t>(other[1])),
-             (vec[2] * static_cast<value_t>(other[0]) -
-              vec[0] * static_cast<value_t>(other[2])),
-             (vec[0] * static_cast<value_t>(other[1]) -
-              vec[1] * static_cast<value_t>(other[0]))};
+  return Vec{(vec[1] * static_cast<double>(other[2]) -
+              vec[2] * static_cast<double>(other[1])),
+             (vec[2] * static_cast<double>(other[0]) -
+              vec[0] * static_cast<double>(other[2])),
+             (vec[0] * static_cast<double>(other[1]) -
+              vec[1] * static_cast<double>(other[0]))};
 }
 
 /**
@@ -289,13 +290,13 @@ constexpr auto Vec<value_t, dim_s, ArenaType::CPU>::cross(
    * @param other 
    * @return Matrix<other_dim, dim> 
    */
-template <util::Numeric value_t, size_t dim_s>
+template <size_t dim_s>
 template <size_t other_dim>
-CNTNS_VEC_FUNC auto Vec<value_t, dim_s, ArenaType::CPU>::outer_product(
-    Vec<value_t, other_dim, ArenaType::CPU> const& other) const
-    -> Matrix<value_t, other_dim, dim_s, ArenaType::CPU>
+CNTNS_VEC_FUNC auto Vec<dim_s, ArenaType::CPU>::outer_product(
+    Vec<other_dim, ArenaType::CPU> const& other) const
+    -> Matrix<other_dim, dim_s, ArenaType::CPU>
 {
-  Matrix<value_t, other_dim, dim_s, ArenaType::CPU> result{};
+  Matrix<other_dim, dim_s, ArenaType::CPU> result{};
   for ( size_t k = 0; k < dim_s; ++k ) {
     for ( size_t j = 0; j < other_dim; ++j ) {
       result(j, k) = _values[k] * other[j];

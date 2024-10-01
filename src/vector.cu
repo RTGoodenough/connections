@@ -1,10 +1,11 @@
 
-
 #include <cuda.h>
 #include <cuda_device_runtime_api.h>
 #include <cuda_runtime.h>
 
 #include <cstdio>
+#include <limits>
+#include <cfloat>
 #include <curand.h>
 #include <curand_kernel.h>
 
@@ -113,53 +114,34 @@ __global__ void outer_product_kernel(double const* lhs, double const* rhs, doubl
   }
 }
 
-/**
- * @brief Applies the logistic sigmoid function to an array
- * 
- */
-__global__ void logsig_kernel(double const* input, double* output, int size) {
-  unsigned int idx = blockIdx.x * blockDim.x + threadIdx.x;
-  
-  if (idx < size) {
-    output[idx] = 1.0F / (1.0F + exp(-input[idx]));
-  }
-}
 
-/**
- * @brief Applies the logistic sigmoid derivative to an array
- * 
- */
-__global__ void logsig_derivative_kernel(double const* input, double* output, int size) {
-  unsigned int idx = blockIdx.x * blockDim.x + threadIdx.x;
+__global__ void max_element_kernel(double* input, int* maxIndex, int size) {
+    extern __shared__ int sharedMemory[];
 
-  if (idx < size) {
-    output[idx] = input[idx] * (1 - input[idx]);
-  }
-}
+    // Thread index
+    int tid = threadIdx.x;
 
-/**
- * @brief Calculates the quadratic cost function between correct and result
- * 
- */
-__global__ void quadratic_cost_kernel(double const* correct, double const* result, double* loss, int size) {
-  unsigned int idx = blockIdx.x * blockDim.x + threadIdx.x;
-  __shared__ double scratch[256];
-
-
-  if (idx < size) {
-    double diff = correct[idx] - result[idx];
-    scratch[idx] = diff * diff;
-  }
-
-  __syncthreads();
-
-  if (idx == 0) {
-    double sum = 0.0F;
-    for (int i = 0; i < size; i++) {
-      sum += scratch[i];
+    // Load elements into shared memory
+    if (tid < size) {
+        sharedMemory[tid] = input[tid];
     }
-    *loss = sum * (0.5 * static_cast<double>(size));
-  }
+    __syncthreads();
+
+    // Parallel reduction to find the index of maximum element
+    for (int stride = 1; stride < blockDim.x; stride *= 2) {
+        if (tid % (2 * stride) == 0 && tid + stride < size) {
+            if (sharedMemory[tid + stride] > sharedMemory[tid]) {
+                sharedMemory[tid] = sharedMemory[tid + stride];
+            }
+        }
+        __syncthreads();
+    }
+
+    // Store the result back to the maxIndex variable
+    if (tid == 0) {
+        *maxIndex = tid; // Assuming max element is at sharedMemory[tid]
+    }
 }
+
 // NOLINTEND(cppcoreguidelines-pro-bounds-pointer-arithmetic, readability-identifier-length)
 }  // namespace cntns
