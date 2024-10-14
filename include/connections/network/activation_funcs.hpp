@@ -99,13 +99,13 @@ struct SoftMax {
   {
     Vec<dim_s, ArenaType::CPU> prob;
     Vec<dim_s, ArenaType::CPU> exp;
-    double                     max = *std::max_element(vec.begin(), vec.end());
+    float                      max = *std::max_element(vec.begin(), vec.end());
 
     for ( size_t i = 0; i < dim_s; ++i ) {
       exp[i] = std::exp(vec[i] - max);
     }
 
-    double expSum = std::accumulate(exp.begin(), exp.end(), 0.0);
+    float expSum = std::accumulate(exp.begin(), exp.end(), 0.0);
     for ( size_t i = 0; i < dim_s; ++i ) {
       prob[i] = exp[i] / expSum;
     }
@@ -124,8 +124,8 @@ struct SoftMax {
   [[nodiscard]] static auto eval(Vec<dim_s, ArenaType::GPU> const& vec)
   {
     Vec<dim_s, ArenaType::GPU> result;
-    logsig_kernel<<<std::ceil(dim_s / 512.0), 512>>>(vec.data(), result.data(),
-                                                     dim_s);
+    softmax_kernel<<<std::ceil(dim_s / 512.0), 512>>>(vec.data(), result.data(),
+                                                      dim_s);
     return result;
   }
 

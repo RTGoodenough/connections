@@ -23,7 +23,7 @@ class Layer {
   [[nodiscard]] constexpr auto back_propagate(in_vec_t const& input,
                                               out_vec_t&& error) -> in_vec_t;
 
-  void update_weights(double learningRate, size_t batchSize);
+  void update_weights(float learningRate, size_t batchSize);
 
   [[nodiscard]] constexpr auto get_weights() const -> weights_t const&
   {
@@ -39,9 +39,9 @@ class Layer {
   }
 
  private:
-  weights_t _weights{};
-  out_vec_t _biases{};
-  out_vec_t _activations{};
+  weights_t _weights;
+  out_vec_t _biases;
+  out_vec_t _activations;
 
   weights_t _weightDeltas;
   out_vec_t _biasDeltas;
@@ -52,7 +52,7 @@ class Layer {
   constexpr Layer(Layer&&) noexcept = default;
   constexpr auto operator=(Layer const&) -> Layer& = default;
   constexpr auto operator=(Layer&&) noexcept -> Layer& = default;
-  constexpr ~Layer() = default;
+  ~Layer() = default;
 };
 
 template <size_t input_s, size_t output_s, typename activation_t,
@@ -97,9 +97,9 @@ constexpr auto Layer<input_s, output_s, activation_t, arena_e>::back_propagate(
 template <size_t input_s, size_t output_s, typename activation_t,
           ArenaType arena_e>
 void Layer<input_s, output_s, activation_t, arena_e>::update_weights(
-    double learningRate, size_t batchSize)
+    float learningRate, size_t batchSize)
 {
-  double const learningScale = (learningRate / static_cast<double>(batchSize));
+  float const learningScale = (learningRate / static_cast<float>(batchSize));
   _weights += (_weightDeltas *= learningScale);
   _biases += (_biasDeltas *= learningScale);
 

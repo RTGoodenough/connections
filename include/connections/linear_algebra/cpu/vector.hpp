@@ -30,7 +30,7 @@ template <size_t dim_s>
 class Vec<dim_s, ArenaType::CPU>
     : public util::Operators<Vec<dim_s, ArenaType::CPU>> {
  public:
-  using array_t = std::array<double, dim_s>;
+  using array_t = std::array<float, dim_s>;
   static constexpr size_t DIM = dim_s;
 
   static auto random() -> Vec;
@@ -43,12 +43,12 @@ class Vec<dim_s, ArenaType::CPU>
   }
   CNTNS_VEC_FUNC auto data() noexcept -> array_t& { return _values; }
 
-  CNTNS_VEC_FUNC auto mag() const noexcept -> double;
-  CNTNS_VEC_FUNC auto mag_2() const noexcept -> double;
+  CNTNS_VEC_FUNC auto mag() const noexcept -> float;
+  CNTNS_VEC_FUNC auto mag_2() const noexcept -> float;
 
   template <typename other_t>
   CNTNS_VEC_FUNC auto dot(other_t&& other) const noexcept
-      -> double requires util::is_same_dim<Vec, other_t>;
+      -> float requires util::is_same_dim<Vec, other_t>;
 
   template <typename other_t>
   CNTNS_VEC_FUNC auto cross(other_t&& other) const noexcept
@@ -65,7 +65,7 @@ class Vec<dim_s, ArenaType::CPU>
   CNTNS_VEC_FUNC auto outer_product(Vec<other_dim, ArenaType::CPU> const& other)
       const -> Matrix<other_dim, dim_s, ArenaType::CPU>;
 
-  CNTNS_VEC_FUNC auto at(size_t idx) const noexcept -> double const&
+  CNTNS_VEC_FUNC auto at(size_t idx) const noexcept -> float const&
   {
     return _values[idx];
   }
@@ -108,7 +108,7 @@ class Vec<dim_s, ArenaType::CPU>
       (not std::is_same_v<other_t, Vec>)
   {
     for ( size_t i = 0; i < other_t::DIM; ++i ) {
-      _values[i] = static_cast<double>(other[i]);
+      _values[i] = static_cast<float>(other[i]);
     }
   }
 
@@ -118,7 +118,7 @@ class Vec<dim_s, ArenaType::CPU>
       (not std::is_same_v<other_t, Vec>)
   {
     for ( size_t i = 0; i < other_t::DIM; ++i ) {
-      _values[i] = static_cast<double>(other[i]);
+      _values[i] = static_cast<float>(other[i]);
     }
     return *this;
   }
@@ -129,7 +129,7 @@ class Vec<dim_s, ArenaType::CPU>
       (not std::is_same_v<other_t, Vec>)
   {
     for ( size_t i = 0; i < other_t::DIM; ++i ) {
-      _values[i] = static_cast<double>(other[i]);
+      _values[i] = static_cast<float>(other[i]);
     }
     return *this;
   }
@@ -143,12 +143,12 @@ class Vec<dim_s, ArenaType::CPU>
 
   CNTNS_VEC_FUNC auto operator<=>(Vec const&) const noexcept = default;
 
-  CNTNS_VEC_FUNC auto operator[](size_t idx) const noexcept -> double const&
+  CNTNS_VEC_FUNC auto operator[](size_t idx) const noexcept -> float const&
   {
     assert(idx < dim_s);
     return _values[idx];
   }
-  CNTNS_VEC_FUNC auto operator[](size_t idx) noexcept -> double&
+  CNTNS_VEC_FUNC auto operator[](size_t idx) noexcept -> float&
   {
     assert(idx < dim_s);
     return _values[idx];
@@ -198,9 +198,9 @@ class Vec<dim_s, ArenaType::CPU>
  private:
   template <typename... args_t>
   constexpr auto to_array(args_t&&... args)
-      -> std::array<double, sizeof...(args_t)>
+      -> std::array<float, sizeof...(args_t)>
   {
-    return {{(static_cast<double>(std::forward<args_t>(args)))...}};
+    return {{(static_cast<float>(std::forward<args_t>(args)))...}};
   }
 };
 
@@ -224,7 +224,7 @@ auto Vec<dim_s, ArenaType::CPU>::random() -> Vec
   Vec                             result{};
   std::random_device              rand;
   std::default_random_engine      gen(rand());
-  std::normal_distribution<float> dist(0.0F, 1.0F);
+  std::normal_distribution<float> dist(-1.0F, 1.0F);
 
   std::generate(result._values.begin(), result._values.end(),
                 [&dist, &gen]() { return dist(gen); });
@@ -232,15 +232,15 @@ auto Vec<dim_s, ArenaType::CPU>::random() -> Vec
 }
 
 template <typename vec_t>
-constexpr auto operator*(double&& other, vec_t&& vec) -> decltype(auto)
+constexpr auto operator*(float&& other, vec_t&& vec) -> decltype(auto)
 {
-  return std::forward<vec_t>(vec) * std::forward<double>(other);
+  return std::forward<vec_t>(vec) * std::forward<float>(other);
 }
 
 template <size_t dim_s>
-constexpr auto Vec<dim_s, ArenaType::CPU>::mag() const noexcept -> double
+constexpr auto Vec<dim_s, ArenaType::CPU>::mag() const noexcept -> float
 {
-  double sum = 0.0;
+  float sum = 0.0;
   for ( size_t i = 0; i < dim_s; ++i ) {
     sum += _values[i] * _values[i];
   }
@@ -248,9 +248,9 @@ constexpr auto Vec<dim_s, ArenaType::CPU>::mag() const noexcept -> double
 }
 
 template <size_t dim_s>
-constexpr auto Vec<dim_s, ArenaType::CPU>::mag_2() const noexcept -> double
+constexpr auto Vec<dim_s, ArenaType::CPU>::mag_2() const noexcept -> float
 {
-  double sum = 0.0;
+  float sum = 0.0;
   for ( size_t i = 0; i < dim_s; ++i ) {
     sum += _values[i] * _values[i];
   }
@@ -260,11 +260,11 @@ constexpr auto Vec<dim_s, ArenaType::CPU>::mag_2() const noexcept -> double
 template <size_t dim_s>
 template <typename other_t>
 constexpr auto Vec<dim_s, ArenaType::CPU>::dot(other_t&& other) const noexcept
-    -> double requires util::is_same_dim<Vec, other_t>
+    -> float requires util::is_same_dim<Vec, other_t>
 {
-  double sum = 0.0;
+  float sum = 0.0;
   for ( size_t i = 0; i < dim_s; ++i ) {
-    sum += (*this)[i] * static_cast<double>(other[i]);
+    sum += (*this)[i] * static_cast<float>(other[i]);
   }
   return sum;
 }
@@ -275,12 +275,12 @@ constexpr auto Vec<dim_s, ArenaType::CPU>::cross(other_t&& other) const noexcept
     -> Vec requires util::is_3d<Vec> && util::is_same_dim<Vec, other_t>
 {
   auto const& vec = *this;
-  return Vec{(vec[1] * static_cast<double>(other[2]) -
-              vec[2] * static_cast<double>(other[1])),
-             (vec[2] * static_cast<double>(other[0]) -
-              vec[0] * static_cast<double>(other[2])),
-             (vec[0] * static_cast<double>(other[1]) -
-              vec[1] * static_cast<double>(other[0]))};
+  return Vec{(vec[1] * static_cast<float>(other[2]) -
+              vec[2] * static_cast<float>(other[1])),
+             (vec[2] * static_cast<float>(other[0]) -
+              vec[0] * static_cast<float>(other[2])),
+             (vec[0] * static_cast<float>(other[1]) -
+              vec[1] * static_cast<float>(other[0]))};
 }
 
 /**

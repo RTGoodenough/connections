@@ -1,5 +1,6 @@
 #pragma once
 
+#include <iostream>
 #ifdef CNTNS_USE_CUDA
 
 #include <cassert>
@@ -35,26 +36,26 @@ class Vec<dim_s, ArenaType::GPU>
   static constexpr size_t SIZE = dim_s;
   static constexpr dim3   BLOCK_SIZE{128};
   static constexpr dim3   GRID_SIZE{static_cast<unsigned int>(
-      std::ceil(dim_s / static_cast<double>(BLOCK_SIZE.x)))};
+      std::ceil(dim_s / static_cast<float>(BLOCK_SIZE.x)))};
 
   [[nodiscard]] static auto random() -> Vec;
 
   void zero();
 
-  [[nodiscard]] auto data() -> double* { return _data; }
-  [[nodiscard]] auto data() const -> double const* { return _data; }
+  [[nodiscard]] auto data() -> float* { return _data; }
+  [[nodiscard]] auto data() const -> float const* { return _data; }
 
   [[nodiscard]] auto pull() const -> cVec;
   void               pull(cVec& vec) const;
-  void               pull(std::array<double, dim_s>& vec) const;
-  void               pull(std::vector<double>& vec) const;
+  void               pull(std::array<float, dim_s>& vec) const;
+  void               pull(std::vector<float>& vec) const;
 
   void push(cVec const& vec);
   void push(cVec&& vec);
-  void push(std::array<double, dim_s> const& vec);
-  void push(std::array<double, dim_s>&& vec);
-  void push(std::vector<double> const& vec);
-  void push(std::vector<double>&& vec);
+  void push(std::array<float, dim_s> const& vec);
+  void push(std::array<float, dim_s>&& vec);
+  void push(std::vector<float> const& vec);
+  void push(std::vector<float>&& vec);
 
   template <size_t other_dim>
   [[nodiscard]] auto outer_product(
@@ -73,17 +74,17 @@ class Vec<dim_s, ArenaType::GPU>
   [[nodiscard]] constexpr auto operator*(Vec const& other) const -> Vec;
   constexpr auto               operator*=(Vec const& other) -> Vec&;
 
-  [[nodiscard]] constexpr auto operator*(double scalar) const -> Vec;
-  constexpr auto               operator*=(double scalar) -> Vec&;
+  [[nodiscard]] constexpr auto operator*(float scalar) const -> Vec;
+  constexpr auto               operator*=(float scalar) -> Vec&;
 
  private:
-  double* _data{nullptr};
+  float* _data{nullptr};
 
   void allocate()
   {
     if ( _data == nullptr ) {
       util::check_error(
-          cudaMallocAsync(&_data, dim_s * sizeof(double), nullptr));
+          cudaMallocAsync(&_data, dim_s * sizeof(float), nullptr));
     }
   }
 
@@ -140,8 +141,8 @@ auto Vec<dim_s, ArenaType::GPU>::pull() const
     -> Vec<dim_s, ArenaType::CPU>
 {
   assert(_data != nullptr);
-  Vec<dim_s, ArenaType::GPU> result{};
-  util::check_error(cudaMemcpy(result.data(), _data, dim_s * sizeof(double),
+  Vec<dim_s, ArenaType::CPU> result{};
+  util::check_error(cudaMemcpy(result.data().data(), _data, dim_s * sizeof(float),
                                cudaMemcpyDeviceToHost));
   return result;
 }
@@ -154,7 +155,7 @@ void Vec<dim_s, ArenaType::GPU>::pull(
     Vec<dim_s, ArenaType::CPU>& vec) const
 {
   assert(_data != nullptr);
-  util::check_error(cudaMemcpy(vec.data(), _data, dim_s * sizeof(double),
+  util::check_error(cudaMemcpy(vec.data(), _data, dim_s * sizeof(float),
                                cudaMemcpyDeviceToHost));
 }
 
@@ -163,10 +164,10 @@ void Vec<dim_s, ArenaType::GPU>::pull(
 */
 template <size_t dim_s>
 void Vec<dim_s, ArenaType::GPU>::pull(
-    std::array<double, dim_s>& vec) const
+    std::array<float, dim_s>& vec) const
 {
   assert(_data != nullptr);
-  util::check_error(cudaMemcpy(vec.data(), _data, dim_s * sizeof(double),
+  util::check_error(cudaMemcpy(vec.data(), _data, dim_s * sizeof(float),
                                cudaMemcpyDeviceToHost));
 }
 
@@ -175,10 +176,10 @@ void Vec<dim_s, ArenaType::GPU>::pull(
 */
 template <size_t dim_s>
 void Vec<dim_s, ArenaType::GPU>::push(
-    std::array<double, dim_s> const& vec)
+    std::array<float, dim_s> const& vec)
 {
   assert(_data != nullptr);
-  util::check_error(cudaMemcpy(_data, vec.data(), dim_s * sizeof(double),
+  util::check_error(cudaMemcpy(_data, vec.data(), dim_s * sizeof(float),
                                cudaMemcpyHostToDevice));
 }
 
@@ -186,11 +187,11 @@ void Vec<dim_s, ArenaType::GPU>::push(
  * @brief Pulls the data from the gpu into the provided std::vector
 */
 template <size_t dim_s>
-void Vec<dim_s, ArenaType::GPU>::pull(std::vector<double>& vec) const
+void Vec<dim_s, ArenaType::GPU>::pull(std::vector<float>& vec) const
 {
   assert(_data != nullptr);
   assert(vec.size() == dim_s);
-  util::check_error(cudaMemcpy(vec.data(), _data, dim_s * sizeof(double),
+  util::check_error(cudaMemcpy(vec.data(), _data, dim_s * sizeof(float),
                                cudaMemcpyDeviceToHost));
 }
 
@@ -198,11 +199,11 @@ void Vec<dim_s, ArenaType::GPU>::pull(std::vector<double>& vec) const
  * @brief Pushes the data from the provided std::vector to the Array on the GPU
 */
 template <size_t dim_s>
-void Vec<dim_s, ArenaType::GPU>::push(std::vector<double> const& vec)
+void Vec<dim_s, ArenaType::GPU>::push(std::vector<float> const& vec)
 {
   assert(_data != nullptr);
   assert(vec.size() == dim_s);
-  util::check_error(cudaMemcpy(_data, vec.data(), dim_s * sizeof(double),
+  util::check_error(cudaMemcpy(_data, vec.data(), dim_s * sizeof(float),
                                cudaMemcpyHostToDevice));
 }
 
@@ -327,7 +328,7 @@ constexpr auto Vec<dim_s, ArenaType::GPU>::operator*=(
  */
 template <size_t dim_s>
 constexpr auto Vec<dim_s, ArenaType::GPU>::operator*(
-    double scalar) const -> Vec<dim_s, ArenaType::GPU>
+    float scalar) const -> Vec<dim_s, ArenaType::GPU>
 {
   Vec<dim_s, ArenaType::GPU> result{};
   vector_scalar_kernel<<<GRID_SIZE, BLOCK_SIZE>>>(_data, scalar, result.data(),
@@ -344,7 +345,7 @@ constexpr auto Vec<dim_s, ArenaType::GPU>::operator*(
  * @return Vec<dim_s, ArenaType::GPU>& 
  */
 template <size_t dim_s>
-constexpr auto Vec<dim_s, ArenaType::GPU>::operator*=(double scalar)
+constexpr auto Vec<dim_s, ArenaType::GPU>::operator*=(float scalar)
     -> Vec<dim_s, ArenaType::GPU>&
 {
   vector_scalar_kernel<<<GRID_SIZE, BLOCK_SIZE>>>(_data, scalar, _data, dim_s);
@@ -359,7 +360,7 @@ Vec<dim_s, ArenaType::GPU>::Vec(
     Vec<dim_s, ArenaType::CPU>&& vec)
 {
   if ( _data == nullptr ) allocate();
-  util::check_error(cudaMemcpy(_data, vec.data(), dim_s * sizeof(double),
+  util::check_error(cudaMemcpy(_data, vec.data(), dim_s * sizeof(float),
                                cudaMemcpyHostToDevice));
 }
 
@@ -389,7 +390,7 @@ Vec<dim_s, ArenaType::GPU>::Vec(
     Vec<dim_s, ArenaType::GPU> const& other)
 {
   if ( _data == nullptr ) allocate();
-  util::check_error(cudaMemcpy(_data, other._data, dim_s * sizeof(double),
+  util::check_error(cudaMemcpy(_data, other._data, dim_s * sizeof(float),
                                cudaMemcpyDeviceToDevice));
 }
 
@@ -400,7 +401,7 @@ auto Vec<dim_s, ArenaType::GPU>::operator=(
 {
   if ( this == &other ) return *this;
   if ( _data == nullptr ) allocate();
-  util::check_error(cudaMemcpy(_data, other._data, dim_s * sizeof(double),
+  util::check_error(cudaMemcpy(_data, other._data, dim_s * sizeof(float),
                                cudaMemcpyDeviceToDevice));
   return *this;
 }
@@ -423,7 +424,7 @@ void Vec<dim_s, ArenaType::GPU>::push(
     Vec<dim_s, ArenaType::CPU> const& vec)
 {
   assert(_data != nullptr);
-  util::check_error(cudaMemcpy(_data, vec.data().data(), dim_s * sizeof(double),
+  util::check_error(cudaMemcpy(_data, vec.data().data(), dim_s * sizeof(float),
                                cudaMemcpyHostToDevice));
 }
 
@@ -432,7 +433,7 @@ Vec<dim_s, ArenaType::GPU>::Vec(
     Vec<dim_s, ArenaType::CPU> const& vec)
 {
   if ( _data == nullptr ) allocate();
-  util::check_error(cudaMemcpy(_data, vec.data().data(), dim_s * sizeof(double),
+  util::check_error(cudaMemcpy(_data, vec.data().data(), dim_s * sizeof(float),
                                cudaMemcpyHostToDevice));
 }
 

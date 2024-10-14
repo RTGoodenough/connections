@@ -48,6 +48,7 @@ void gpu_train_network(auto& network, TrainingConfig config,
 #ifdef CNTNS_USE_CUDA
   // Load data onto the GPU
   auto [input, correct] = gpu_load_data(data);
+  float loss = 0;
 
   // Run the training loop for the specified number of epochs
   for ( size_t epoch = 0; epoch < config.epochs; ++epoch ) {
@@ -56,6 +57,7 @@ void gpu_train_network(auto& network, TrainingConfig config,
       // Evaluate the network for each input in the batch, calculate the loss and back propagate the error
       for ( size_t j = 0; j < config.batchSize; ++j ) {
         auto const& result = network.evaluate(input[i + j]);
+        // loss += network.loss(correct[i + j], result);
         network.back_propagate(input[i + j],
                                network.error(correct[i + j], result));
       }
@@ -64,9 +66,10 @@ void gpu_train_network(auto& network, TrainingConfig config,
       network.update_weights(config.learningRate, config.batchSize);
 
       output::message(
-          "GPU Training\nEpoch: %zu/%zu\nImage: %zu/%zu\nGPU Memory: "
+          "GPU Training\nEpoch: %zu/%zu\nImage: %zu/%zu\nLoss: %f\nGPU Memory: "
           "%f%\n",
-          epoch, config.epochs, i, data.input.size(), util::memory_usage());
+          epoch, config.epochs, i, data.input.size(),
+          loss / static_cast<float>(i + 1), util::memory_usage());
     }
   }
 #else
@@ -84,7 +87,7 @@ void cpu_train_network(auto& network, TrainingConfig config,
 {
   // Run the training loop for the specified number of epochs
   for ( size_t epoch = 0; epoch < config.epochs; ++epoch ) {
-    double loss = 0.0F;
+    float loss = 0.0F;
 
     // Break the data into batches and train the network
     for ( size_t i = 0; i < data.input.size(); i += config.batchSize ) {
@@ -102,7 +105,7 @@ void cpu_train_network(auto& network, TrainingConfig config,
       output::message(
           "CPU Training\nEpoch: %zu/%zu\nImage: %zu/%zu\nLoss: %f\n", epoch,
           config.epochs, i, data.input.size(),
-          loss / static_cast<double>(i + 1));
+          loss / static_cast<float>(i + 1));
     }
   }
 }

@@ -14,8 +14,8 @@ namespace cntns {
  */
 template <size_t rows, size_t cols>
 struct OuterProductProxy {
-  double const* lhs;
-  double const* rhs;
+  float const* lhs;
+  float const* rhs;
 };
 }  // namespace cntns
 

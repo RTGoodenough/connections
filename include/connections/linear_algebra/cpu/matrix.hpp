@@ -38,12 +38,12 @@ class Matrix<rows, cols, ArenaType::CPU>
   [[nodiscard]] static auto    random() -> Mat;
   [[nodiscard]] constexpr auto transpose() const -> MatTranspose;
 
-  [[nodiscard]] constexpr auto values() const -> std::vector<double> const&
+  [[nodiscard]] constexpr auto values() const -> std::vector<float> const&
   {
     return _values;
   }
 
-  [[nodiscard]] constexpr auto operator()(size_t row, size_t col) -> double&
+  [[nodiscard]] constexpr auto operator()(size_t row, size_t col) -> float&
   {
     return _values[row * cols + col];
   }
@@ -51,20 +51,20 @@ class Matrix<rows, cols, ArenaType::CPU>
   [[nodiscard]] constexpr auto operator+(Mat const& other) const -> Mat;
   [[nodiscard]] constexpr auto operator-(Mat const& other) const -> Mat;
 
-  [[nodiscard]] constexpr auto operator*(double scalar) const -> Mat;
+  [[nodiscard]] constexpr auto operator*(float scalar) const -> Mat;
   [[nodiscard]] constexpr auto operator*(InputVec const& input) const
       -> OutputVec;
 
  private:
-  std::vector<double> _values;
+  std::vector<float> _values;
 
  public:
-  Matrix() : _values(rows * cols) {}
+  constexpr Matrix() : _values(rows * cols) {}
   constexpr Matrix(Matrix const&) = default;
   constexpr Matrix(Matrix&&) noexcept = default;
   constexpr auto operator=(Matrix const&) -> Matrix& = default;
   constexpr auto operator=(Matrix&&) noexcept -> Matrix& = default;
-  constexpr ~Matrix() = default;
+  ~Matrix() = default;
 };
 
 /**
@@ -99,9 +99,9 @@ template <size_t rows, size_t cols>
 {
   Mat result{};
   result._values.resize(rows * cols);
-  std::random_device                     rand;
-  std::default_random_engine             gen(rand());
-  std::uniform_real_distribution<double> dist(-1.0F, 1.0F);
+  std::random_device                    rand;
+  std::default_random_engine            gen(rand());
+  std::uniform_real_distribution<float> dist(-1.0F, 1.0F);
 
   for ( auto& value : result._values ) {
     value = dist(gen);
@@ -180,7 +180,7 @@ template <size_t rows, size_t cols>
  */
 template <size_t rows, size_t cols>
 [[nodiscard]] constexpr auto Matrix<rows, cols, ArenaType::CPU>::operator*(
-    double scalar) const -> Mat
+    float scalar) const -> Mat
 {
   Mat result{};
   std::transform(_values.begin(), _values.end(), result._values.begin(),

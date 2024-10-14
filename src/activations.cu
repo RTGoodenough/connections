@@ -1,5 +1,6 @@
 
 #include <cfloat>
+#include <cinttypes>
 #include <limits>
 
 namespace cntns {
@@ -10,7 +11,7 @@ namespace cntns {
  * @brief Applies the logistic sigmoid function to an array
  * 
  */
-__global__ void logsig_kernel(double const* input, double* output, int size) {
+__global__ void logsig_kernel(float const* input, float* output, int size) {
   unsigned int idx = blockIdx.x * blockDim.x + threadIdx.x;
   
   if (idx < size) {
@@ -22,7 +23,7 @@ __global__ void logsig_kernel(double const* input, double* output, int size) {
  * @brief Applies the logistic sigmoid derivative to an array
  * 
  */
-__global__ void logsig_derivative_kernel(double const* input, double* output, int size) {
+__global__ void logsig_derivative_kernel(float const* input, float* output, int size) {
   unsigned int idx = blockIdx.x * blockDim.x + threadIdx.x;
 
   if (idx < size) {
@@ -30,15 +31,15 @@ __global__ void logsig_derivative_kernel(double const* input, double* output, in
   }
 } 
 
-__global__ void relu_kernel(double const* input, double* output, int size) {
+__global__ void relu_kernel(float const* input, float* output, int size) {
   unsigned int idx = blockIdx.x * blockDim.x + threadIdx.x;
 
   if (idx < size) {
-    output[idx] = input[idx] >= 0 ? input[idx] : 0.0;
+    output[idx] = input[idx] >= 0 ? input[idx] : 0.0F;
   }
 }
 
-__global__ void relu_derivative_kernel(double const* input, double* output, int size) {
+__global__ void relu_derivative_kernel(float const* input, float* output, int size) {
   unsigned int idx = blockIdx.x * blockDim.x + threadIdx.x;
 
   if (idx < size) {
@@ -46,52 +47,64 @@ __global__ void relu_derivative_kernel(double const* input, double* output, int 
   }
 }
 
-__global__ void softmax_kernel(double const* input, double* output, int size) {
-    extern __shared__ double sharedData[];
+__global__ void softmax_kernel(float const* input, float* output, int size) {
+  // TODO(rolland): fix this
+  unsigned int tid = threadIdx.x;
 
-    int tid = threadIdx.x;
-    int index = blockIdx.x * blockDim.x + threadIdx.x;
-
-    // Step 1: Find the maximum value in the input for numerical stability
-    double maxVal = -FLT_MAX;
-    if (index < size) {
-        maxVal = input[index];
+  if (tid == 0) {
+    float max = -1;
+    for (size_t i = 0; i < size; ++i) {
+      if (input[i] > max) max = input[i];
     }
 
-    // Store maximum value in shared memory
-    sharedData[tid] = maxVal;
-    __syncthreads();
-
-    // Perform parallel reduction to find the maximum value
-    for (int stride = blockDim.x / 2; stride > 0; stride /= 2) {
-        if (tid < stride) {
-            sharedData[tid] = max(sharedData[tid], sharedData[tid + stride]);
-        }
-        __syncthreads();
+    float sum = 0;
+    for (size_t i = 0; i < size; ++i) {
+      output[i] =  exp(input[i] - max);
+      sum += output[i];
     }
-    maxVal = sharedData[0];
 
-    // Step 2: Compute the exponentials and their sum
-    double sumExp = 0.0;
-    if (index < size) {
-        sharedData[tid] = exp(input[index] - maxVal); // Subtract max_val for numerical stability
-        sumExp = sharedData[tid];
+    for (size_t i = 0; i < size; ++i) {
+      output[i] =  output[i] / sum;
     }
-    __syncthreads();
+  }
 
-    // Perform parallel reduction to find the sum of exponentials
-    for (int stride = blockDim.x / 2; stride > 0; stride /= 2) {
-        if (tid < stride) {
-            sharedData[tid] += sharedData[tid + stride];
-        }
-        __syncthreads();
-    }
-    sumExp = sharedData[0];
+  // __shared__ float sharedMemory[256];
+  // unsigned int tid = threadIdx.x;
+  // unsigned int i = blockIdx.x * blockDim.x + threadIdx.x;
+  
+  // sharedMemory[tid] = input[i];
+  // __syncthreads();
 
-    // Step 3: Compute Softmax by dividing each exponential by the sum of exponentials
-    if (index < size) {
-        output[index] = sharedData[tid] / sumExp;
-    }
+  // // find the max value
+  // for (unsigned int stride = blockDim.x/2; stride > 0; stride >>= 1) {
+  //   if (tid < stride) {
+  //     if (sharedMemory[tid + stride] > sharedMemory[tid]) {
+  //       sharedMemory[tid] = sharedMemory[tid + stride];
+  //     }
+  //   }
+  //   __syncthreads();
+  // }
+  // float maxVal = sharedMemory[0];
+
+  // // set shared memory to 
+  // if ( tid < size ) {
+  //     sharedMemory[tid] = exp(input[tid] - maxVal);
+  // }
+  // __syncthreads();
+
+  // // sum up values
+  
+  // for (unsigned int stride = blockDim.x/2; stride > 0; stride >>= 1) {
+  //   if (tid < stride) {
+  //     sharedMemory[tid] += sharedMemory[tid + stride];
+  //   }
+  //   __syncthreads();
+  // }
+  // float sumExp = sharedMemory[0];
+
+  // if ( tid < size ) {
+  //     output[tid] = sharedMemory[tid] / sumExp;
+  // }
 }
 
 

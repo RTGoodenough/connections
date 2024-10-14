@@ -11,7 +11,7 @@ namespace cntns {
 struct TrainingConfig {
   size_t epochs{};
   size_t batchSize{};
-  double learningRate{};
+  float  learningRate{};
 };
 
 /**

@@ -17,7 +17,7 @@ namespace cntns {
  */
 template <size_t rows, size_t cols>
 struct TransposeProxy {
-  double const* mat;
+  float const* mat;
 
   [[nodiscard]] auto operator*(Vec<rows, ArenaType::GPU> const& input) const
       -> Vec<cols, ArenaType::GPU>

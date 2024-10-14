@@ -1,5 +1,7 @@
 #pragma once
 
+#include <iostream>
+#include <stdexcept>
 #ifdef CNTNS_USE_CUDA
 
 #include <cassert>
@@ -31,8 +33,8 @@ class Matrix<rows, cols, ArenaType::GPU> : public util::Operators<Matrix<rows, c
   constexpr static size_t NUM_COLS = cols;
 
   constexpr static dim3 BLOCK_SIZE{32, 32, 1};
-  constexpr static dim3 GRID_SIZE{static_cast<unsigned int>(std::ceil(cols / static_cast<double>(BLOCK_SIZE.x))),
-                                  static_cast<unsigned int>(std::ceil(rows / static_cast<double>(BLOCK_SIZE.y))), 1};
+  constexpr static dim3 GRID_SIZE{static_cast<unsigned int>(std::ceil(cols / static_cast<float>(BLOCK_SIZE.x))),
+                                  static_cast<unsigned int>(std::ceil(rows / static_cast<float>(BLOCK_SIZE.y))), 1};
 
   [[nodiscard]] static auto random() -> Matrix;
 
@@ -40,15 +42,15 @@ class Matrix<rows, cols, ArenaType::GPU> : public util::Operators<Matrix<rows, c
   [[nodiscard]] auto transpose() const -> TransposeProxy<rows, cols>;
 
   [[nodiscard]] auto values() const -> Vec<rows * cols, ArenaType::GPU> const& { return _values; }
-  [[nodiscard]] auto data() -> double* { return _values.data(); }
-  [[nodiscard]] auto data() const -> double const* { return _values.data(); }
+  [[nodiscard]] auto data() -> float* { return _values.data(); }
+  [[nodiscard]] auto data() const -> float const* { return _values.data(); }
 
-  [[nodiscard]] auto pull() const -> std::vector<double>;
-  void               push(std::vector<double> const& values);
+  [[nodiscard]] auto pull() const -> std::vector<float>;
+  void               push(std::vector<float> const& values);
 
   [[nodiscard]] auto operator+(Matrix<rows, cols, ArenaType::GPU> const& other) const -> Matrix<rows, cols, ArenaType::GPU>;
   [[nodiscard]] auto operator-(Matrix<rows, cols, ArenaType::GPU> const& other) const -> Matrix<rows, cols, ArenaType::GPU>;
-  [[nodiscard]] auto operator*(double scalar) const -> Matrix<rows, cols, ArenaType::GPU>;
+  [[nodiscard]] auto operator*(float scalar) const -> Matrix<rows, cols, ArenaType::GPU>;
   [[nodiscard]] auto operator*(Vec<cols, ArenaType::GPU> const& input) const -> Vec<rows, ArenaType::GPU>;
 
   auto operator+=(Matrix<rows, cols, ArenaType::GPU> const& other) -> Matrix<rows, cols, ArenaType::GPU>&;
@@ -65,8 +67,8 @@ class Matrix<rows, cols, ArenaType::GPU> : public util::Operators<Matrix<rows, c
   Matrix(Matrix&& other) noexcept = default;
   auto operator=(Matrix&& other) noexcept -> Matrix& = default;
 
-  Matrix(Matrix const&) = delete;
-  auto operator=(Matrix const&) -> Matrix& = delete;
+  Matrix(Matrix const&) = default;
+  auto operator=(Matrix const&) -> Matrix& = default;
 };
 
 /**
@@ -110,7 +112,7 @@ template <size_t rows, size_t cols>
  * @return Matrix<rows, cols, ArenaType::GPU> 
  */
 template <size_t rows, size_t cols>
-[[nodiscard]] auto Matrix<rows, cols, ArenaType::GPU>::operator*(double scalar) const -> Matrix<rows, cols, ArenaType::GPU> {
+[[nodiscard]] auto Matrix<rows, cols, ArenaType::GPU>::operator*(float scalar) const -> Matrix<rows, cols, ArenaType::GPU> {
   Matrix<rows, cols, ArenaType::GPU> result{};
   mat_scalar_kernel<<<GRID_SIZE, BLOCK_SIZE>>>(_values.data(), scalar, result.data(), rows, cols);
   util::check_error(cudaGetLastError());
@@ -128,7 +130,7 @@ template <size_t rows, size_t cols>
 template <size_t rows, size_t cols>
 [[nodiscard]] auto Matrix<rows, cols, ArenaType::GPU>::operator*(Vec<cols, ArenaType::GPU> const& input) const -> Vec<rows, ArenaType::GPU> {
   static dim3 blockSize{512};
-  static dim3 gridSize{static_cast<unsigned int>(std::ceil(rows / static_cast<double>(blockSize.x)))};
+  static dim3 gridSize{static_cast<unsigned int>(std::ceil(rows / static_cast<float>(blockSize.x)))};
 
   Vec<rows, ArenaType::GPU> result{};
   mat_vec_mul_kernel<<<gridSize, blockSize>>>(data(), input.data(), result.data(), rows, cols);
@@ -217,7 +219,7 @@ template <size_t rows, size_t cols>
  * @param values 
  */
 template <size_t rows, size_t cols>
-void Matrix<rows, cols, ArenaType::GPU>::push(std::vector<double> const& values) {
+void Matrix<rows, cols, ArenaType::GPU>::push(std::vector<float> const& values) {
   assert(values.size() == rows * cols);
   _values.push(values);
 }
@@ -227,12 +229,12 @@ void Matrix<rows, cols, ArenaType::GPU>::push(std::vector<double> const& values)
  * 
  * @tparam rows 
  * @tparam cols 
- * @return std::vector<double> 
+ * @return std::vector<float> 
  */
 template <size_t rows, size_t cols>
-[[nodiscard]] auto Matrix<rows, cols, ArenaType::GPU>::pull() const -> std::vector<double> {
-  std::vector<double> result(rows * cols);
-  util::check_error(cudaMemcpy(result.data(), _values.data(), rows * cols * sizeof(double), cudaMemcpyDeviceToHost));
+[[nodiscard]] auto Matrix<rows, cols, ArenaType::GPU>::pull() const -> std::vector<float> {
+  std::vector<float> result(rows * cols);
+  util::check_error(cudaMemcpy(result.data(), _values.data(), rows * cols * sizeof(float), cudaMemcpyDeviceToHost));
   return result;
 }
 
